@@ -104,6 +104,29 @@ func Add[K Mod](slice *[]K, mod K, f int) (bool, glog.Event) {
 	return overwrote, evt
 }
 
+// Add adds a modifier. Returns true if payload written successfully, false if mod not found
+// TODO: consider adding a map here to track the index to assist with faster lookups
+func AddPayload[K Mod](slice *[]K, mod K, f int) (bool, glog.Event) {
+	ind := Find(slice, mod.Key())
+	overwrote := false
+	var evt glog.Event
+
+	// if does not exist, make new and add
+	if ind == -1 {
+		*slice = append(*slice, mod)
+		return overwrote, evt
+	}
+
+	// otherwise check not expired
+	if (*slice)[ind].Expiry() > f || (*slice)[ind].Expiry() == -1 {
+		overwrote = true
+		evt = (*slice)[ind].Event()
+	}
+	(*slice)[ind] = mod
+
+	return overwrote, evt
+}
+
 func Find[K Mod](slice *[]K, key string) int {
 	ind := -1
 	for i, v := range *slice {
